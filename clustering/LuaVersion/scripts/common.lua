@@ -56,7 +56,16 @@ local function load_series(topic_matches)
   end
   
   print("Loading all days...")
-  local days = glob("/home/experimentos/CORPORA/RASPIMON/houseA/*/*series.csv.gz")
+  local days_tbl = {
+    glob("/home/experimentos/CORPORA/RASPIMON/houseA/201512*/*series.csv.gz"), -- 2015 12
+    glob("/home/experimentos/CORPORA/RASPIMON/houseA/201601*/*series.csv.gz"), -- 2016 01
+    glob("/home/experimentos/CORPORA/RASPIMON/houseA/201602*/*series.csv.gz"), -- 2016 02
+  }
+  
+  local days = {}
+  for _,tbl in ipairs(days_tbl) do
+    for i,v in ipairs(tbl) do days[#days+1] = v end
+  end
   
   local result = px.map(map_fn, days):
     after(function(tbl)
@@ -216,7 +225,9 @@ end
 -- 
 -- $\displaystyle \frac {2}{nm}\sum_{i,j=1}^{n,m} \|a_i- b_j\|_2 - \frac {1}{n^2}\sum_{i,j=1}^{n} \|a_i-a_j\|_2 - \frac{1}{m^2}\sum_{i,j=1}^{m} \|b_i-b_j\|_2$
 -- 
-local function avg_linkage(A,B,costs) -- Mean or average linkage clustering
+-- **WARNING:** Every linkage function assumes that A and B sets are disjoint.
+local function avg_linkage(A,B,costs,transform) -- Mean or average linkage clustering
+  if transform then costs = transform(costs:clone()) end
   local d = costs:index(1,A):index(2,B):sum()
   return 1/(#A*#B) * d
 end
@@ -234,12 +245,11 @@ local function max_linkage(A,B,costs) -- Maximum or complete linkage clustering
 end
 
 local function min_energy(A,B,costs) -- Minimum energy clustring
-  local inter_cluster   = 2 * avg_linkage(A,B,costs)
-  local intra_cluster_A = avg_linkage(A,A,costs)
-  local intra_cluster_B = avg_linkage(B,B,costs)
+  local inter_cluster   = 2 * avg_linkage(A,B,costs,matrix.op.sqrt)
+  local intra_cluster_A = avg_linkage(A,A,costs,matrix.op.sqrt)
+  local intra_cluster_B = avg_linkage(B,B,costs,matrix.op.sqrt)
   return inter_cluster - intra_cluster_A - intra_cluster_B
 end
-
 
 -- CH-index computing centroids as the series closest to all other series in the
 -- same cluster.
