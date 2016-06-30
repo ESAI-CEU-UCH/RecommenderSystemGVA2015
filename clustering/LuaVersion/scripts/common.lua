@@ -119,7 +119,7 @@ local function extract_patterns(s, d, period, th, run)
   local gt_i = gt_b:convert_to("int32")
   local diff = gt_i[{'2:'}] - gt_i[{'1:-2'}]
   local nz_pos = diff:neq(0):to_index()
-  local pats = { consumption={}, demand={} }
+  local pats = { consumption={}, demand={}, from={}, to={} }
   if nz_pos then
     local from,to
     local n = 0
@@ -135,6 +135,8 @@ local function extract_patterns(s, d, period, th, run)
         to = nz_pos[i]+1
         pats.consumption[n] = s[{ {from,to} }]
         pats.demand[n] = d[{ {from,to} }]
+	pats.from[n] = from
+	pats.to[n] = to
       end
     end
   else
@@ -227,7 +229,7 @@ end
 -- 
 -- **WARNING:** Every linkage function assumes that A and B sets are disjoint.
 local function avg_linkage(A,B,costs,transform) -- Mean or average linkage clustering
-  if transform then costs = transform(costs:clone()) end
+  if transform then costs = transform(costs) end
   local d = costs:index(1,A):index(2,B):sum()
   return 1/(#A*#B) * d
 end
@@ -292,7 +294,7 @@ local map_fn = function(i, costs, cl, linkage_fn, huge)
       candidate[1] = i
       candidate[2] = j
     end
-    if j % 200 == 0 then collectgarbage("collect") end
+    if j % 100 == 0 then collectgarbage("collect") end
   end
   collectgarbage("collect")
   return { linkage = linkage,  candidate = candidate }
