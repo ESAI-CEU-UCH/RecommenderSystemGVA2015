@@ -45,7 +45,7 @@ local function load_series(topic_matches)
     for _,topic in ipairs(g:levels("topic")) do
       if any(topic,topic_matches) then
         local t_df = g:get_group(topic)
-        local idx = t_df:as_matrix("timestamp",{dtype="int32"})
+        local idx = t_df:as_matrix("timestamp",{dtype="double"})
         local m = t_df:as_matrix("value",{dtype="float"})
         timestamps[topic] = idx
         values[topic]     = m
